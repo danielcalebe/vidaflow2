@@ -61,3 +61,27 @@ data class RegisterResponse(
     @SerialName("user_id")
     val userId: Int
 )
+
+@Serializable
+data class TipResponse(
+    val categoria: String,
+    val icone: String,
+    val id: Int,
+    val texto: String
+)
+
+
+@Serializable
+data class HabitResponse(
+    val antecedencia_lembrete: String,
+    val categoria: String,
+    val frequencia: String,
+    val horario_alvo: String,
+    val id: Int,
+    val lembrete: Boolean,
+    val meta_diaria: Int,
+    val nome: String,
+    val tags: List<String>
+)
+
+

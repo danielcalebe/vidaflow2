@@ -1,5 +1,6 @@
 package com.medicao0102.vidaflow2.data
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.remember
@@ -17,114 +18,201 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import androidx.core.content.edit
+import java.io.PushbackInputStream
 
 sealed class UiState<out T>() {
-  data class Success<out T>(val result: T) : UiState<T>()
-  data class Error(val e: Exception, val errorResponse: ErrorResponse) : UiState<Nothing>()
-  object Loading : UiState<Nothing>()
+    data class Success<out T>(val result: T) : UiState<T>()
+    data class Error(val e: Exception, val errorResponse: ErrorResponse) : UiState<Nothing>()
+    object Loading : UiState<Nothing>()
 }
 
 class ApiService(
-  private val ctx: Context
+    private val ctx: Context
 ) {
 
-  val BASE_URL = "http://10.0.2.2:5000/v1"
+    val BASE_URL = "http://10.0.2.2:5000/v1"
 
-  val bearerTokensList = mutableListOf<BearerTokens>(BearerTokens("", ""))
+    val sp = ctx.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
-  val client = HttpClient(Android) {
-    install(ContentNegotiation) {
-      json(
-        Json {
-          ignoreUnknownKeys = true
+    val bearerTokensList = mutableListOf<BearerTokens>(   BearerTokens(getLoginResponse()?.token?:"", ""))
+
+    val client = HttpClient(Android) {
+        install(ContentNegotiation) {
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                })
         }
-      )
-    }
-    install(Auth) {
-      bearer {
-        loadTokens { bearerTokensList.last() }
-        refreshTokens { null }
-      }
-    }
-  }
-
-
-  suspend fun isStatusAvailable(): Boolean {
-    try {
-      val response = client.get("$BASE_URL/status")
-      Log.d("status-response", response.status.value.toString())
-      val result = response.body<StatusResponse>()
-      Log.d("status-result", result.toString())
-      return response.status.value == 200
-
-
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return false
-    }
-  }
-
-  suspend fun login(request: LoginRequest): UiState<LoginResponse> {
-    try {
-      val response = client.post("$BASE_URL/login") {
-        contentType(ContentType.Application.Json)
-        setBody(request)
-      }
-      when (response.status.value) {
-        200 -> {
-          return UiState.Success(response.body<LoginResponse>())
+        install(Auth) {
+            bearer {
+                loadTokens { bearerTokensList.last() }
+                refreshTokens { null }
+            }
         }
+    }
 
-        else -> {
-          try {
-            return UiState.Error(Exception("Desconhecido"), response.body<ErrorResponse>())
-          } catch (e1: Exception) {
-            return UiState.Error(
-              e1,
-              ErrorResponse("Requisição retornoou um erro deconhecido!", "unknow")
+
+    suspend fun isStatusAvailable(): Boolean {
+        try {
+            val response = client.get("$BASE_URL/status")
+            Log.d("status-response", response.status.value.toString())
+            val result = response.body<StatusResponse>()
+            Log.d("status-result", result.toString())
+            return response.status.value == 200
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+    }
+
+
+    fun updateLoginResponse(loginResponse: LoginResponse) {
+        sp.edit {
+            putString(
+                "login_response", Json.encodeToString(loginResponse)
             )
-          }
         }
-      }
-
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
     }
 
-  }
-
-
-
-
-  suspend fun register(request: RegisterRequest): UiState<RegisterResponse> {
-    try {
-      val response = client.post("$BASE_URL/users") {
-        contentType(ContentType.Application.Json)
-        setBody(request)
-      }
-      when (response.status.value) {
-        201 -> {
-          return UiState.Success(response.body<RegisterResponse>())
+    fun getLoginResponse(): LoginResponse? {
+        return try {
+            sp.getString("login_response", null)?.let { Json.decodeFromString(it) }
+        } catch (e: Exception) {
+            null
         }
-
-        else -> {
-          try {
-            return UiState.Error(Exception("Desconhecido"), response.body<ErrorResponse>())
-          } catch (e1: Exception) {
-            return UiState.Error(
-              e1,
-              ErrorResponse("Requisição retornoou um erro deconhecido!", "unknow")
-            )
-          }
-        }
-      }
-
-    } catch (e: Exception) {
-      e.printStackTrace()
-      return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
     }
 
-  }
+
+
+    @SuppressLint("CommitPrefEdits")
+    suspend fun login(request: LoginRequest): UiState<LoginResponse> {
+        try {
+            val response = client.post("$BASE_URL/login") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            when (response.status.value) {
+                200 -> {
+                    updateLoginResponse(response.body<LoginResponse>())
+                    bearerTokensList.add(BearerTokens(response.body<LoginResponse>().token, ""))
+                    return UiState.Success(response.body<LoginResponse>())
+                }
+
+                else -> {
+                    try {
+                        return UiState.Error(
+                            Exception("Desconhecido"), response.body<ErrorResponse>()
+                        )
+                    } catch (e1: Exception) {
+                        return UiState.Error(
+                            e1, ErrorResponse("Requisição retornoou um erro deconhecido!", "unknow")
+                        )
+                    }
+                }
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
+        }
+
+    }
+
+
+    suspend fun register(request: RegisterRequest): UiState<RegisterResponse> {
+        try {
+            val response = client.post("$BASE_URL/users") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            when (response.status.value) {
+                201 -> {
+                    return UiState.Success(response.body<RegisterResponse>())
+                }
+
+                else -> {
+                    try {
+                        return UiState.Error(
+                            Exception("Desconhecido"), response.body<ErrorResponse>()
+                        )
+                    } catch (e1: Exception) {
+                        return UiState.Error(
+                            e1, ErrorResponse("Requisição retornoou um erro deconhecido!", "unknow")
+                        )
+                    }
+                }
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
+        }
+
+    }
+
+
+    suspend fun getTip(): UiState<TipResponse> {
+        try {
+            val response = client.get("$BASE_URL/dica")
+
+            Log.d("getTip", response.toString())
+            when (response.status.value) {
+                200 -> {
+                    val result = UiState.Success(response.body<TipResponse>())
+                    return result
+                }
+
+                401 -> {
+                    val result = response.body<ErrorResponse>()
+                    return UiState.Error(Exception("Token inválido"), result)
+                }
+
+                else -> {
+                    return UiState.Error(
+                        Exception("Error desconhecido"),
+                        ErrorResponse("Erro desconhecido", "unknow")
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
+        }
+    }
+
+    suspend fun getHabit(userId: String): UiState<List<HabitResponse>> {
+        try {
+            val response = client.get("$BASE_URL/habits/$userId")
+
+            Log.d("habit", response.toString())
+            when (response.status.value) {
+                200 -> {
+                    val result = UiState.Success(response.body<List<HabitResponse>>())
+                    return result
+                }
+
+                401 -> {
+                    val result = response.body<ErrorResponse>()
+                    return UiState.Error(Exception("Token inválido"), result)
+                }
+
+                404 -> {
+                    val result = response.body<ErrorResponse>()
+                    return UiState.Error(Exception("Não encontrado"), result)
+                }
+
+                else -> {
+                    return UiState.Error(
+                        Exception("Error desconhecido"),
+                        ErrorResponse("Erro desconhecido", "unknow")
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
+        }
+    }
 
 }

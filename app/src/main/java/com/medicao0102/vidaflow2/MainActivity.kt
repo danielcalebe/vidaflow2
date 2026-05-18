@@ -31,71 +31,72 @@ import com.medicao0102.vidaflow2.ui.screens.Splash
 import com.medicao0102.vidaflow2.ui.theme.Vidaflow2Theme
 
 class MainActivity : ComponentActivity() {
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    enableEdgeToEdge()
-    setContent {
-      val navController = rememberNavController()
-      val navBackStackEntry = navController.currentBackStackEntryAsState()
-      val currentRoute = navBackStackEntry.value?.destination?.route
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            val navController = rememberNavController()
+            val navBackStackEntry = navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry.value?.destination?.route
 
 
-      val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+            val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
 
-      val context = LocalContext.current
+            val context = LocalContext.current
 
-      val apiService = remember { ApiService(context) }
-
-
-      if (currentRoute == "splash"){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-          windowInsetsController.hide(Type.statusBars())
-        }
-      } else {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-          windowInsetsController.show(Type.statusBars())
-        }
-      }
-
-      val sh = remember { SnackbarHostState() }
+            val apiService = remember { ApiService(context) }
 
 
-        Vidaflow2Theme {
-
-          Scaffold(snackbarHost = {
-            SnackbarHost(sh)
-          },modifier = Modifier.fillMaxSize()) { innerPadding ->
-            Column(
-              modifier = Modifier.padding(innerPadding)
-            ) {
-              NavHost(
-                navController,
-                "splash"
-              ) {
-                composable("splash") {
-                  Splash(navController, apiService, context)
+            if (currentRoute == "splash") {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    windowInsetsController.hide(Type.statusBars())
                 }
-                composable("login") {
-                  Login(apiService, navController, sh)
-
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    windowInsetsController.show(Type.statusBars())
                 }
-                composable("cadastro") {
-                  Cadastro(apiService, navController, sh)
-
-                }
-                composable("home") {
-                  Home()
-                }
-              }
             }
-          }
+
+            val sh = remember { SnackbarHostState() }
+
+
+            Vidaflow2Theme {
+
+                Scaffold(snackbarHost = {
+
+                    SnackbarHost(sh)
+                }, modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    Column(
+                        modifier = Modifier.padding(innerPadding)
+                    ) {
+                        NavHost(
+                            navController,
+                            "splash"
+                        ) {
+                            composable("splash") {
+                                Splash(navController, apiService, context)
+                            }
+                            composable("login") {
+                                Login(apiService, navController, sh)
+
+                            }
+                            composable("cadastro") {
+                                Cadastro(apiService, navController, sh)
+
+                            }
+                            composable("home") {
+                                Home(apiService, navController, context)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-  }
 }
 
 
 @Composable
 fun Loading() {
-  CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
 }
