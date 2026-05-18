@@ -232,7 +232,7 @@ fun Cadastro(apiService: ApiService, navController: NavHostController, sh: Snack
                   }
 
                   is UiState.Success<RegisterResponse> -> {
-                    sh.showSnackbar("Conta criada com sucesso! Faça login.")
+                    sh.showSnackbar("Conta criada com sucesso! Faça login.", duration = SnackbarDuration.Short, actionLabel = "Ir para Login")
                     navController.navigate("login")
                   }
                 }
@@ -245,7 +245,7 @@ fun Cadastro(apiService: ApiService, navController: NavHostController, sh: Snack
             }
           }
         },
-        enabled = email.isNotEmpty() && pass.isNotEmpty() && passConfirm.isNotEmpty() && nome.isNotEmpty()
+        enabled = email.isNotEmpty() && pass.isNotEmpty() && passConfirm.isNotEmpty() && nome.isNotEmpty() && pass == passConfirm && emailErr == null && passErr == null && nomeErr == null
       ) {
         Text("Criar conta")
       }
@@ -270,3 +270,5 @@ fun Cadastro(apiService: ApiService, navController: NavHostController, sh: Snack
 
 
 }
+
+
