@@ -1,0 +1,16 @@
+[
+    {
+        "id": "1",
+        "nome": "Beber água",
+        "categoria": "Hidratação",
+        "horario_alvo": "08:00",
+        "frequencia": "Diário",
+        "lembrete": true,
+        "antecedencia_lembrete": "15 min",
+        "meta_diaria": 8,
+        "tags": [
+            "saúde",
+            "manhã"
+        ]
+    }
+]

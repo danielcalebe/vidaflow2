@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "categoria": "Hidratação",
+        "texto": "Beba ao menos 2litros de água hoje!",
+        "icone": "water_drop"
+    },
+    {
+        "id": 2,
+        "categoria": "Ola",
+        "texto": "Ola",
+        "icone": "water_drop"
+    },
+    {
+        "id": 3,
+        "categoria": "Alo",
+        "texto": "Alo",
+        "icone": "water_drop"
+    },
+    {
+        "id": 4,
+        "categoria": "Opa",
+        "texto": "Opa",
+        "icone": "water_drop"
+    }
+]
