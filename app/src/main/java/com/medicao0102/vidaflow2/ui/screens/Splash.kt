@@ -50,108 +50,130 @@ import kotlinx.coroutines.launch
 @Composable
 fun Splash(navController: NavHostController, apiService: ApiService, ctx: Context) {
 
-    var isLoading by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) }
-    var isStatusAvailable by remember { mutableStateOf<Boolean?>(null) }
-    var getLoginResponse by remember { mutableStateOf<LoginResponse?>(null) }
-    val scope = rememberCoroutineScope()
+  var isLoading by remember { mutableStateOf(false) }
+  var showDialog by remember { mutableStateOf(false) }
+  var isStatusAvailable by remember { mutableStateOf<Boolean?>(null) }
+  var getLoginResponse by remember { mutableStateOf<LoginResponse?>(null) }
+  val scope = rememberCoroutineScope()
 
 
 
 
 
-    LaunchedEffect(Unit) {
-        isLoading = true
-        delay(200)
-        isStatusAvailable = apiService.isStatusAvailable()
-        if (isStatusAvailable == true) {
-            delay(3000);
+  LaunchedEffect(Unit) {
+    isLoading = true
+    delay(200)
+    isStatusAvailable = apiService.isStatusAvailable()
+    if (isStatusAvailable == true) {
+      getLoginResponse = apiService.getLoginResponse()
+      getLoginResponse?.let {
+        val result = apiService.getTip()
+        delay(3000);
+        when (result) {
+          is UiState.Error -> {
+            navController.navigate("login")
+          }
+
+          UiState.Loading -> {}
+          is UiState.Success<TipResponse> -> {
+            navController.navigate("home")
+          }
+        }
+      } ?: navController.navigate("login")
+    } else {
+      showDialog = true;
+    }
+    isLoading = false
+
+  }
+
+
+  Column(
+    Modifier
+      .fillMaxSize()
+      .clickable {
+
+        scope.launch {
+          if (isStatusAvailable == true) {
             getLoginResponse = apiService.getLoginResponse()
             getLoginResponse?.let {
-               val result = apiService.getTip()
-                when (result) {
-                    is UiState.Error -> {
-                        navController.navigate("login")
-                    }
-                    UiState.Loading -> {}
-                    is UiState.Success<TipResponse> -> {navController.navigate("home")}
+              val result = apiService.getTip()
+              when (result) {
+                is UiState.Error -> {
+                  navController.navigate("login")
                 }
+
+                UiState.Loading -> {}
+                is UiState.Success<TipResponse> -> {
+                  navController.navigate("home")
+                }
+              }
             } ?: navController.navigate("login")
-        } else {
+          } else {
             showDialog = true;
+          }
+          isLoading = false
         }
-        isLoading = false
+      }
+      .background(MaterialTheme.colorScheme.background),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center) {
 
-    }
-
+    Image(
+      painter = painterResource(R.drawable.logo),
+      null,
+      modifier = Modifier.fillMaxWidth(0.5f),
+      contentScale = ContentScale.Crop
+    )
 
     Column(
-        Modifier
-            .fillMaxSize()
-            .clickable {
-                if (isStatusAvailable == true) {
-                    navController.navigate("login")
-                }
-            }
-            .background(MaterialTheme.colorScheme.background),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center) {
-
-        Image(
-            painter = painterResource(R.drawable.logo),
-            null,
-            modifier = Modifier.fillMaxWidth(0.5f),
-            contentScale = ContentScale.Crop
-        )
-
+      Modifier.fillMaxWidth(0.8f),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      Text("Cuide de você, um hábito de cada vez.", fontStyle = FontStyle.Italic)
+      AnimatedVisibility(isLoading) {
+        Loading()
+      }
+      if (showDialog) Dialog(
+        onDismissRequest = {}) {
         Column(
-            Modifier.fillMaxWidth(0.8f),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+          Modifier
+            .clip(RoundedCornerShape(12))
+            .background(MaterialTheme.colorScheme.background)
+            .padding(24.dp)
         ) {
-            Text("Cuide de você, um hábito de cada vez.", fontStyle = FontStyle.Italic)
-            AnimatedVisibility(isLoading) {
-                Loading()
-            }
-            if (showDialog) Dialog(
-                onDismissRequest = {}) {
-                Column(
-                    Modifier
-                        .clip(RoundedCornerShape(12))
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(24.dp)
-                ) {
-                    Text(
-                        "Erro ao se conectar ao servidor. Tente novamente.",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Row(
-                        Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = {
-                            (ctx as? Activity)?.finish()
-                        }) { Text("Sair") }
-                        Button(onClick = {
-                            scope.launch {
-                                showDialog = false
-                                isLoading = true
-                                delay(300)
-                                isStatusAvailable = apiService.isStatusAvailable()
-                                if (isStatusAvailable == true) {
-                                    delay(3000); navController.navigate("login")
-                                } else {
-                                    showDialog = true;
-                                }
-                                isLoading = false
-                            }
-                        }) { Text("Tentar novamente") }
-                    }
+          Text(
+            "Erro ao se conectar ao servidor. Tente novamente.",
+            color = MaterialTheme.colorScheme.error
+          )
+          Spacer(Modifier.height(24.dp))
+          Row(
+            Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End
+          ) {
+            TextButton(onClick = {
+              (ctx as? Activity)?.finish()
+            }) { Text("Sair") }
+            Button(onClick = {
+              scope.launch {
+                showDialog = false
+                isLoading = true
+                delay(300)
+                isStatusAvailable = apiService.isStatusAvailable()
+                if (isStatusAvailable == true) {
+                  delay(3000); navController.navigate("login")
+                } else {
+                  showDialog = true;
                 }
-            }
+                isLoading = false
+              }
+            }) { Text("Tentar novamente") }
+          }
         }
-
+      }
     }
+
+  }
 
 
 }
