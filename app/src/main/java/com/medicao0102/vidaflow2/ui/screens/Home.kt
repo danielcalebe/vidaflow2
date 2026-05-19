@@ -224,7 +224,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
             if (it is UiState.Success) BadgedBox(
               badge = {
                 Badge(
-                  containerColor = MaterialTheme.colorScheme.primary,
+                  containerColor = MaterialTheme.colorScheme.secondary,
                   contentColor = MaterialTheme.colorScheme.background
                 ) {
                   Text(isDoneSize.toString())
@@ -545,6 +545,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                 "Dica do dia",
                 style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
               )
+              Spacer(Modifier.height(4.dp))
 
               Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -575,8 +576,9 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                             .clip(
                               RoundedCornerShape(12.dp)
                             )
-                            .background(MaterialTheme.colorScheme.background.copy(0.3f))
+                            .background(MaterialTheme.colorScheme.secondary)
                             .padding(vertical=4.dp, horizontal = 8.dp)
+
 
                         ) {
                           Text("Saude")
@@ -612,7 +614,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                             .clip(
                               RoundedCornerShape(12.dp)
                             )
-                            .background(MaterialTheme.colorScheme.background.copy(0.3f))
+                            .background(MaterialTheme.colorScheme.secondary)
                             .padding(vertical=4.dp, horizontal = 8.dp)
 
                         ) {
