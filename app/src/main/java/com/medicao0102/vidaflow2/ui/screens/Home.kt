@@ -1,26 +1,36 @@
 package com.medicao0102.vidaflow2.ui.screens
 
-import android.R
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import android.widget.Toast
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
+
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bed
 import androidx.compose.material.icons.filled.CheckBox
@@ -28,6 +38,7 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.More
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
@@ -40,10 +51,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,14 +65,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.font.FontWeight.Companion.W500
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -68,19 +82,20 @@ import com.medicao0102.vidaflow2.data.ApiService
 import com.medicao0102.vidaflow2.data.HabitResponse
 import com.medicao0102.vidaflow2.data.HabitStatus
 import com.medicao0102.vidaflow2.data.LoginResponse
+import com.medicao0102.vidaflow2.data.TipResponse
 import com.medicao0102.vidaflow2.data.UiState
 import com.medicao0102.vidaflow2.ui.screens.PERIODOS.MADRUGADA
 import com.medicao0102.vidaflow2.ui.screens.PERIODOS.MANHA
 import com.medicao0102.vidaflow2.ui.screens.PERIODOS.NOITE
 import com.medicao0102.vidaflow2.ui.screens.PERIODOS.TARDE
-import io.ktor.util.hex
+import io.ktor.http.hostIsIp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.time.LocalTime
-import kotlin.let
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun Home(apiService: ApiService, navController: NavHostController, ctx: Context) {
 
@@ -88,34 +103,82 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
   var habits by remember { mutableStateOf<UiState<List<HabitResponse>>?>(null) }
   var habitsJson by remember { mutableStateOf<List<HabitResponse>?>(null) }
   var scope = rememberCoroutineScope()
-
+  var isDoneSize by remember { mutableStateOf(0) }
   var stateDonePercentage by remember { mutableStateOf(0f) }
-
+  var dica by remember { mutableStateOf<UiState<TipResponse>?>(null) }
 
   LaunchedEffect(Unit) {
     userData = apiService.getLoginResponse()
     habits = apiService.getHabit(userData?.userId.toString())
-    if (habits is UiState.Error)
-      habitsJson = try {
-        Json.decodeFromString<List<HabitResponse>>(
-          ctx.assets.open("habits.json").bufferedReader().use { it.readText() })
-      } catch (e: Exception) {
-        null
-      }
+    if (habits is UiState.Error) habitsJson = try {
+      Json.decodeFromString<List<HabitResponse>>(
+        ctx.assets.open("habits.json").bufferedReader().use { it.readText() })
+    } catch (e: Exception) {
+      null
+    }
+    isDoneSize =
+      apiService.getHabitStatusList()?.let { list -> list.filter { !it.isDone }.size } ?: 0
 
     stateDonePercentage = apiService.getHabitStatusList()?.let { list ->
-      list.filter { it.isDone }.size.toFloat() /
-          list.size.toFloat()
+      list.filter { it.isDone }.size.toFloat() / list.size.toFloat()
     } ?: 0f
+
+    dica = apiService.getTip()
   }
 
 
-
+  var showBottomSheet by remember { mutableStateOf(false) }
+  var bottomSheetData by remember { mutableStateOf<HabitResponse?>(null) }
+  var sheetState = rememberModalBottomSheetState()
   Column(
     Modifier
       .fillMaxSize()
+      .verticalScroll(rememberScrollState())
       .background(MaterialTheme.colorScheme.background)
   ) {
+
+    if (showBottomSheet) {
+      ModalBottomSheet(sheetState = sheetState, onDismissRequest = {
+        showBottomSheet = false
+      }) {
+        Row(
+          Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.Center
+        ) {
+          Row(
+            Modifier
+              .fillMaxWidth()
+              .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+          ) {
+            TextButton(onClick = {
+
+            }) {
+              Text("Editar")
+            }
+            VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
+            TextButton(onClick = {
+
+            }) {
+              Text("Duplicar", color = MaterialTheme.colorScheme.surfaceDim)
+            }
+            VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
+            TextButton(onClick = {
+
+            }) {
+              Text("Excluir", color = MaterialTheme.colorScheme.error)
+            }
+            VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
+            TextButton(onClick = {
+
+            }) {
+              Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
+            }
+          }
+        }
+      }
+    }
 //        Button(onClick ={
 //
 //
@@ -147,8 +210,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
 
             "Boa noite, ${userData?.name}"
           }
-        },
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium)
+        }, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium)
       )
 
       Row(
@@ -165,16 +227,14 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                   containerColor = MaterialTheme.colorScheme.primary,
                   contentColor = MaterialTheme.colorScheme.background
                 ) {
-                  Text(it.result.size.toString())
+                  Text(isDoneSize.toString())
                 }
               }) {
 
               Icon(
                 Icons.Default.Notifications, null, modifier = Modifier.clickable {
                   Toast.makeText(
-                    ctx,
-                    "Você tem ${it.result.size} hábito(s) para completar hoje!",
-                    Toast.LENGTH_SHORT
+                    ctx, "Você tem $isDoneSize hábito(s) para completar hoje!", Toast.LENGTH_SHORT
                   ).show()
                 })
 
@@ -259,9 +319,11 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
 
               apiService.getHabitStatusList()?.filter { it.isDone }?.size ?: 0
             } de ${
-              apiService.getHabitStatusList()?.size ?: 0
-            } hábitos concluídos hoje"
-          )
+              habits?.let {
+                if (it is UiState.Success) it.result.size
+                else apiService.getHabitStatusList()?.size ?: 0
+              }
+            } hábitos concluídos hoje")
         }
       }
     }
@@ -284,52 +346,80 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
 
         is UiState.Success<List<HabitResponse>> -> {
           var isRefreshing by remember { mutableStateOf(false) }
-          PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = {
-              isRefreshing = true
-              scope.launch {
-                habits = apiService.getHabit(userData?.userId.toString())
-                if (habits is UiState.Error)
-                  habitsJson = try {
+
+          Column(Modifier.fillMaxWidth()) {
+            Row(
+              Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp, horizontal = 24.dp)
+            ) {
+              Text(
+                "Seus hábitos hoje",
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
+              )
+            }
+            PullToRefreshBox(
+              isRefreshing = isRefreshing,
+              onRefresh = {
+                isRefreshing = true
+                scope.launch {
+                  habits = apiService.getHabit(userData?.userId.toString())
+                  if (habits is UiState.Error) habitsJson = try {
                     Json.decodeFromString<List<HabitResponse>>(
                       ctx.assets.open("habits.json").bufferedReader().use { it.readText() })
                   } catch (e: Exception) {
                     null
                   }
-                delay(200)
-                isRefreshing = false
-              }
-            },
-
-            ) {
-            LazyColumn(
-              modifier = Modifier.padding(24.dp),
-              verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-              val grouped = it.result.groupBy { item ->
-                apiService.getHabitStatusList()?.let { list ->
-                  val a = list.filter { it.isDone }.map { it.habitId }
-                  a.contains(item.id)
+                  delay(200)
+                  isRefreshing = false
                 }
-              }
+              },
 
-              grouped.forEach { (bool, responses) ->
+              ) {
+//                        var sorted = remember { mutableStateListOf<HabitResponse?>(null) }
+//                        sorted.addAll(
+//                            it.result.sortedBy { item ->
+//                                apiService.getHabitStatusList()?.let { list ->
+//                                    val a = list.filter { it.isDone }.map { it.habitId }
+//                                    a.contains(item.id)
+//                                }
+//                            })
 
-                Log.d("groupo", grouped.toString())
 
-                items(responses) { it ->
+              LazyColumn(
+                modifier = Modifier
+                  .padding(24.dp)
+                  .height(300.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+              ) {
+
+
+//                            Log.d("groupo", sorted.toString())
+
+                items(it.result) { item ->
+
+                  var offsetX by remember { mutableFloatStateOf(0f) }
                   Card(
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .combinedClickable(onClick = {}, onLongClick = {
+                        showBottomSheet = true
+                      }),
+//                    .offset { IntOffset(offsetX.roundToInt(), 0) }
+//                    .draggable(
+//                      orientation = Orientation.Horizontal,
+//                      state = rememberDraggableState { delta -> offsetX += delta }),
                     elevation = CardDefaults.cardElevation(2.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
 
                   ) {
 
+
                     Row(
                       modifier = Modifier
                         .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(12.dp),
                       verticalAlignment = Alignment.CenterVertically,
                       horizontalArrangement = Arrangement.SpaceBetween
@@ -341,19 +431,19 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                       ) {
 
 
-                        if (apiService.getHabitStatus(it.id) == null)
-                          apiService.putHabitSatus(
-                            HabitStatus(
-                              it.id,
-                              false
-                            )
+                        if (apiService.getHabitStatus(
+                            item.id
+                          ) == null
+                        ) apiService.putHabitSatus(
+                          HabitStatus(
+                            item.id, false
                           )
+                        )
 
                         var status by remember {
                           mutableStateOf(
-                            apiService.getHabitStatus(it.id) ?: HabitStatus(
-                              it.id,
-                              false
+                            apiService.getHabitStatus(item.id) ?: HabitStatus(
+                              item.id, false
                             )
                           )
                         }
@@ -364,28 +454,30 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                           status = status.copy(isDone = !status.isDone)
                           apiService.putHabitSatus(
                             HabitStatus(
-                              it.id, status.isDone
+                              item.id, status.isDone
                             )
                           )
 
+
+
+
                           stateDonePercentage = apiService.getHabitStatusList()?.let { list ->
-                            list.filter { it.isDone }.size.toFloat() /
-                                list.size.toFloat()
+                            list.filter { it.isDone }.size.toFloat() / list.size.toFloat()
                           } ?: 0f
 
 
+                          isDoneSize = apiService.getHabitStatusList()
+                            ?.let { list -> list.filter { !it.isDone }.size } ?: 0
                         }) {
-                          if (!status.isDone)
-                            Icon(Icons.Default.CheckBoxOutlineBlank, null)
-                          else
-                            Icon(
-                              Icons.Default.CheckBox,
-                              null,
-                              tint = MaterialTheme.colorScheme.primary
-                            )
+                          if (!status.isDone) Icon(
+                            Icons.Default.CheckBoxOutlineBlank, null
+                          )
+                          else Icon(
+                            Icons.Default.CheckBox, null, tint = MaterialTheme.colorScheme.primary
+                          )
                         }
                         Icon(
-                          when (it.categoria) {
+                          when (item.categoria) {
                             CATEGORIAS.Hidratação.name -> {
                               Icons.Default.WaterDrop
                             }
@@ -412,23 +504,21 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
 
                               Icons.Default.More
                             }
-                          },
-                          null,
-                          tint = MaterialTheme.colorScheme.secondary
+                          }, null, tint = MaterialTheme.colorScheme.secondary
                         )
 
                         Column() {
                           Text(
-                            it.nome,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                              fontWeight = FontWeight.SemiBold,
-                              fontSize = 16.sp
+                            item.nome, style = MaterialTheme.typography.titleLarge.copy(
+                              fontWeight = FontWeight.SemiBold, fontSize = 16.sp
                             )
                           )
                           Row(verticalAlignment = Alignment.CenterVertically) { }
                           Text(
-                            it.categoria + " - " + it.horario_alvo,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium)
+                            item.categoria + " - " + item.horario_alvo,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                              fontWeight = FontWeight.Medium
+                            )
                           )
 
                         }
@@ -440,14 +530,104 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
 
 
               }
+
+
+            }
+
+
+            Column(
+              Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+            ) {
+
+              Text(
+                "Dica do dia",
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
+              )
+
+              Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                  containerColor = MaterialTheme.colorScheme.primary.copy(0.2f)
+                )
+              ) {
+
+
+                dica?.let { tip ->
+                  when (tip) {
+                    is UiState.Error -> {
+                      Column(
+                        Modifier
+                          .fillMaxWidth()
+                          .padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                      ) {
+                        Icon(
+                          Icons.Default.Lightbulb,
+                          null,
+                          tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text("Beba água regularmente ")
+                        Box(
+                          Modifier
+                            .clip(
+                              RoundedCornerShape(12.dp)
+                            )
+                            .background(MaterialTheme.colorScheme.background.copy(0.3f))
+                            .padding(vertical=4.dp, horizontal = 8.dp)
+
+                        ) {
+                          Text("Saude")
+                        }
+
+                      }
+                    }
+
+                    UiState.Loading -> {
+                      Box(
+                        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                      ) {
+                        Loading()
+                      }
+                    }
+
+                    is UiState.Success<TipResponse> -> {
+                      Column(
+                        Modifier
+                          .fillMaxWidth()
+                          .padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                      ) {
+                        Icon(
+                          Icons.Default.Lightbulb,
+                          null,
+                          tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(tip.result.texto)
+                        Box(
+                          Modifier
+                            .clip(
+                              RoundedCornerShape(12.dp)
+                            )
+                            .background(MaterialTheme.colorScheme.background.copy(0.3f))
+                            .padding(vertical=4.dp, horizontal = 8.dp)
+
+                        ) {
+                          Text(tip.result.categoria)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
-
-        null -> {
-
-        }
       }
+
     }
   }
 }
