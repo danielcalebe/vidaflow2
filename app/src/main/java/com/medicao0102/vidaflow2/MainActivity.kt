@@ -38,6 +38,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.medicao0102.vidaflow2.data.ApiService
 import com.medicao0102.vidaflow2.ui.screens.Cadastro
+import com.medicao0102.vidaflow2.ui.screens.CriarHabito
 import com.medicao0102.vidaflow2.ui.screens.Home
 import com.medicao0102.vidaflow2.ui.screens.Login
 import com.medicao0102.vidaflow2.ui.screens.Splash
@@ -182,7 +183,9 @@ class MainActivity : ComponentActivity() {
               composable("home") {
                 Home(apiService, navController, context)
               }
-              composable("criar_habito") {  }
+              composable("criar_habito") {
+                CriarHabito()
+              }
             }
           }
         }
