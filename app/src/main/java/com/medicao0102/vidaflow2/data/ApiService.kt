@@ -258,4 +258,33 @@ class ApiService(
     }
   }
 
+
+  suspend fun newHabit(newHabit: NewHabit): UiState<NewHabitResponse> {
+    try {
+      val response = client.post("$BASE_URL/habits") {
+        contentType(ContentType.Application.Json)
+        setBody(newHabit)
+      }
+      when (response.status.value) {
+        201 -> {
+          return UiState.Success(response.body<NewHabitResponse>())
+        }
+
+        else -> {
+          try {
+            return UiState.Error(
+              Exception("Desconhecido"), response.body<ErrorResponse>()
+            )
+          } catch (e1: Exception) {
+            return UiState.Error(
+              e1, ErrorResponse("Requisição retornoou um erro deconhecido!", "unknow")
+            )
+          }
+        }
+      }
+    } catch (e: Exception) {
+      e.printStackTrace()
+      return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
+    }
+  }
 }

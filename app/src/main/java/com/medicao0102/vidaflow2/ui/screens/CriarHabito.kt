@@ -1,6 +1,7 @@
 package com.medicao0102.vidaflow2.ui.screens
 
 import android.icu.util.Calendar
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.scrollable
@@ -77,12 +78,22 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.medicao0102.vidaflow2.R
 import com.medicao0102.vidaflow2.data.ApiService
+import com.medicao0102.vidaflow2.data.NewHabit
+import com.medicao0102.vidaflow2.data.NewHabitResponse
+import com.medicao0102.vidaflow2.data.UiState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: SnackbarHostState) {
 
+  var apiResult by remember { mutableStateOf<UiState<NewHabitResponse>?>(null) }
+  var isLembreteActive by remember { mutableStateOf(false) }
+  var selectedLembrete by remember { mutableStateOf("") }
+  var lembreteList = listOf<String>(
+    "5 min", "15 min", "30 min", "1h"
+  )
+  var expandedLembrete by remember { mutableStateOf(false) }
   var nomeErr by remember { mutableStateOf<String?>(null) }
   var descricaoErr by remember { mutableStateOf<String?>(null) }
   var categoriaErr by remember { mutableStateOf<String?>(null) }
@@ -439,12 +450,7 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
 
 
       Column(Modifier.fillMaxWidth()) {
-        var isLembreteActive by remember { mutableStateOf(false) }
-        var selectedLembrete by remember { mutableStateOf("") }
-        var lembreteList = listOf<String>(
-          "5 min", "15 min", "30 min", "1h"
-        )
-        var expandedLembrete by remember { mutableStateOf(false) }
+
         Text(
           "Lembrete",
           style = MaterialTheme.typography.labelSmall.copy(
@@ -574,13 +580,13 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
               Button(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                 onClick = {
-              showCancelDialog = false
+                  showCancelDialog = false
                 }) { Text("Continuar editando") }
             },
             confirmButton = {
               TextButton(onClick = {
 
-                }) { Text("Descartar", color = MaterialTheme.colorScheme.error) }
+              }) { Text("Descartar", color = MaterialTheme.colorScheme.error) }
             }
 
           )
@@ -596,7 +602,7 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
               showCancelDialog = true
             }
           ) {
-            Text("Cancelar" )
+            Text("Cancelar")
             Icon(Icons.Default.Close, null)
 
           }
@@ -640,6 +646,31 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
                   duration = SnackbarDuration.Short,
                   withDismissAction = true
                 )
+                else {
+                  scope.launch {
+                    apiResult =  apiService.newHabit(
+                      NewHabit(
+                        antecedencia_lembrete = selectedLembrete,
+                        categoria = selectedCategoria,
+                        frequencia = selectedFrequencia,
+                        horario_alvo = horario,
+                        lembrete = isLembreteActive,
+                        meta_diaria = metaDiaria.toInt(),
+                        nome = nome,
+                        tags = tagList,
+                        user_id = apiService.getLoginResponse()?.userId.toString()?: "0"
+                      )
+                    )
+
+                    Log.d("apiREsult", apiResult.toString())
+                    if (apiResult is UiState.Success) {
+                      sh.showSnackbar("Sucesso")
+                      navController.navigate("home")}
+                    else if(apiResult is UiState.Error){
+                        sh.showSnackbar("Erro")
+                    }
+                  }
+                }
               }
             }) {
             Text("Salvar")

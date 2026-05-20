@@ -69,3 +69,27 @@ data class HabitStatus(
   var habitId: Int, var isDone: Boolean
 )
 
+
+
+@Serializable
+data class NewHabit(
+    val antecedencia_lembrete: String,
+    val categoria: String,
+    val frequencia: String,
+    val horario_alvo: String,
+    val lembrete: Boolean,
+    val meta_diaria: Int,
+    val nome: String,
+    val tags: List<String>,
+    val user_id: String
+)
+
+
+
+
+@Serializable
+data class NewHabitResponse(
+    val id: String,
+    val message: String,
+    val status: String
+)

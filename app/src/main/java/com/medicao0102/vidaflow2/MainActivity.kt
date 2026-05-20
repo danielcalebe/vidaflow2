@@ -2,6 +2,7 @@ package com.medicao0102.vidaflow2
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowInsets.Type
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +27,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,6 +38,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.medicao0102.vidaflow2.data.ApiService
+import com.medicao0102.vidaflow2.data.NewHabit
 import com.medicao0102.vidaflow2.ui.screens.Cadastro
 import com.medicao0102.vidaflow2.ui.screens.CriarHabito
 import com.medicao0102.vidaflow2.ui.screens.Home
@@ -71,6 +74,7 @@ class MainActivity : ComponentActivity() {
       }
 
       val sh = remember { SnackbarHostState() }
+
 
 
       Vidaflow2Theme {
@@ -183,7 +187,7 @@ class MainActivity : ComponentActivity() {
                 Home(apiService, navController, context)
               }
               composable("criar_habito") {
-                CriarHabito(apiService,navController, sh)
+                CriarHabito(apiService, navController, sh)
               }
             }
           }
