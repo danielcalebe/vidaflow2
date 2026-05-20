@@ -138,7 +138,7 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       IconButton({
-
+        navController.popBackStack()
       }) {
         Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.primary)
       }

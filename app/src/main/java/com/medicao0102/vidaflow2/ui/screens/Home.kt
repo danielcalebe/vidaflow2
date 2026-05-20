@@ -2,6 +2,7 @@ package com.medicao0102.vidaflow2.ui.screens
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.foundation.Canvas
@@ -108,6 +109,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
   LaunchedEffect(Unit) {
     userData = apiService.getLoginResponse()
     habits = apiService.getHabit(userData?.userId.toString())
+    Log.d("habitssss", habits.toString())
     if (habits is UiState.Error) {
       habitsJson = try {
         Json.decodeFromString<List<HabitResponse>>(
@@ -316,13 +318,13 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
           Text(
             "${
 
-            apiService.getHabitStatusList()?.filter { it.isDone }?.size ?: 0
-          } de ${
-            habits?.let {
-              if (it is UiState.Success) it.result.size
-              else apiService.getHabitStatusList()?.size ?: 0
-            }
-          } hábitos concluídos hoje")
+              apiService.getHabitStatusList()?.filter { it.isDone }?.size ?: 0
+            } de ${
+              habits?.let {
+                if (it is UiState.Success) it.result.size
+                else apiService.getHabitStatusList()?.size ?: 0
+              }
+            } hábitos concluídos hoje")
         }
       }
     }
@@ -331,7 +333,9 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
     habits?.let {
       when (it) {
         is UiState.Error -> {
-          Text("Erro")
+          Column(Modifier.fillMaxWidth().padding(12.dp)) {
+            Text(it.errorResponse.message, color = MaterialTheme.colorScheme.error)
+          }
         }
 
         UiState.Loading -> {

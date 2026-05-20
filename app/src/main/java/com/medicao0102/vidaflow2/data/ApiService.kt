@@ -21,6 +21,9 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import androidx.core.content.edit
+import io.ktor.client.plugins.auth.authProviders
+import io.ktor.client.plugins.auth.clearAuthTokens
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
 import java.io.PushbackInputStream
@@ -39,8 +42,8 @@ class ApiService(
 
   val sp = ctx.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
-  val bearerTokensList =
-    mutableListOf<BearerTokens>(BearerTokens(getLoginResponse()?.token ?: "", ""))
+  val bearerTokensStorage =
+    mutableListOf(BearerTokens(getLoginResponse()?.token ?: "", ""))
 
   val client = HttpClient(Android) {
     install(ContentNegotiation) {
@@ -51,7 +54,7 @@ class ApiService(
     }
     install(Auth) {
       bearer {
-        loadTokens { bearerTokensList.last() }
+        loadTokens { bearerTokensStorage.last() }
         refreshTokens { null }
       }
     }
@@ -122,7 +125,6 @@ class ApiService(
   }
 
 
-  @SuppressLint("CommitPrefEdits")
   suspend fun login(request: LoginRequest): UiState<LoginResponse> {
     try {
       val response = client.post("$BASE_URL/login") {
@@ -131,8 +133,9 @@ class ApiService(
       }
       when (response.status.value) {
         200 -> {
+          client.clearAuthTokens()
+          bearerTokensStorage.add(BearerTokens(response.body<LoginResponse>().token, ""))
           updateLoginResponse(response.body<LoginResponse>())
-          bearerTokensList.add(BearerTokens(response.body<LoginResponse>().token, ""))
           return UiState.Success(response.body<LoginResponse>())
         }
 
@@ -142,6 +145,7 @@ class ApiService(
               Exception("Desconhecido"), response.body<ErrorResponse>()
             )
           } catch (e1: Exception) {
+            Log.d("ola", e1.toString())
             return UiState.Error(
               e1, ErrorResponse("Requisição retornoou um erro deconhecido!", "unknow")
             )
@@ -220,9 +224,11 @@ class ApiService(
 
   suspend fun getHabit(userId: String): UiState<List<HabitResponse>> {
     try {
+
       val response = client.get("$BASE_URL/habits/$userId")
 
       Log.d("habit", response.toString())
+      Log.d("habit2", response.bodyAsText())
       when (response.status.value) {
         200 -> {
           val result = UiState.Success(response.body<List<HabitResponse>>())
