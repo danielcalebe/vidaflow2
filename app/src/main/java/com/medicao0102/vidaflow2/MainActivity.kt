@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -184,7 +183,7 @@ class MainActivity : ComponentActivity() {
                 Home(apiService, navController, context)
               }
               composable("criar_habito") {
-                CriarHabito()
+                CriarHabito(apiService,navController, sh)
               }
             }
           }

@@ -6,8 +6,6 @@ import android.widget.Toast
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
-
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -110,11 +108,13 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
   LaunchedEffect(Unit) {
     userData = apiService.getLoginResponse()
     habits = apiService.getHabit(userData?.userId.toString())
-    if (habits is UiState.Error) habitsJson = try {
-      Json.decodeFromString<List<HabitResponse>>(
-        ctx.assets.open("habits.json").bufferedReader().use { it.readText() })
-    } catch (e: Exception) {
-      null
+    if (habits is UiState.Error) {
+      habitsJson = try {
+        Json.decodeFromString<List<HabitResponse>>(
+          ctx.assets.open("habits.json").bufferedReader().use { it.readText() })
+      } catch (e: Exception) {
+        null
+      }
     }
     isDoneSize =
       apiService.getHabitStatusList()?.let { list -> list.filter { !it.isDone }.size } ?: 0
@@ -142,8 +142,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
         showBottomSheet = false
       }) {
         Row(
-          Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.Center
+          Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center
         ) {
           Row(
             Modifier
@@ -317,13 +316,13 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
           Text(
             "${
 
-              apiService.getHabitStatusList()?.filter { it.isDone }?.size ?: 0
-            } de ${
-              habits?.let {
-                if (it is UiState.Success) it.result.size
-                else apiService.getHabitStatusList()?.size ?: 0
-              }
-            } hábitos concluídos hoje")
+            apiService.getHabitStatusList()?.filter { it.isDone }?.size ?: 0
+          } de ${
+            habits?.let {
+              if (it is UiState.Success) it.result.size
+              else apiService.getHabitStatusList()?.size ?: 0
+            }
+          } hábitos concluídos hoje")
         }
       }
     }
@@ -542,14 +541,12 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
             ) {
 
               Text(
-                "Dica do dia",
-                style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
+                "Dica do dia", style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
               )
               Spacer(Modifier.height(4.dp))
 
               Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
+                modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
                   containerColor = MaterialTheme.colorScheme.primary.copy(0.2f)
                 )
               ) {
@@ -566,9 +563,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                         verticalArrangement = Arrangement.Center
                       ) {
                         Icon(
-                          Icons.Default.Lightbulb,
-                          null,
-                          tint = MaterialTheme.colorScheme.primary
+                          Icons.Default.Lightbulb, null, tint = MaterialTheme.colorScheme.primary
                         )
                         Text("Beba água regularmente ")
                         Box(
@@ -577,7 +572,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                               RoundedCornerShape(12.dp)
                             )
                             .background(MaterialTheme.colorScheme.secondary)
-                            .padding(vertical=4.dp, horizontal = 8.dp)
+                            .padding(vertical = 4.dp, horizontal = 8.dp)
 
 
                         ) {
@@ -604,9 +599,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                         verticalArrangement = Arrangement.Center
                       ) {
                         Icon(
-                          Icons.Default.Lightbulb,
-                          null,
-                          tint = MaterialTheme.colorScheme.primary
+                          Icons.Default.Lightbulb, null, tint = MaterialTheme.colorScheme.primary
                         )
                         Text(tip.result.texto)
                         Box(
@@ -615,7 +608,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
                               RoundedCornerShape(12.dp)
                             )
                             .background(MaterialTheme.colorScheme.secondary)
-                            .padding(vertical=4.dp, horizontal = 8.dp)
+                            .padding(vertical = 4.dp, horizontal = 8.dp)
 
                         ) {
                           Text(tip.result.categoria)
