@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -124,435 +125,483 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
 
 
 
+  Column(
+    Modifier
+      .verticalScroll(rememberScrollState())
+      .background(MaterialTheme.colorScheme.background)
+  ) {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(12.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      IconButton({
+
+      }) {
+        Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.primary)
+      }
+      Text(
+        "Novo Hábito",
+        style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
+      )
+      Spacer(Modifier.weight(1f))
+      Image(
+        painter = painterResource(R.drawable.logo),
+        null,
+        modifier = Modifier.size(60.dp),
+        contentScale = ContentScale.Crop
+      )
+
+
+    }
+
+
     Column(
       Modifier
-        .verticalScroll(rememberScrollState()).background(MaterialTheme.colorScheme.background)
+        .fillMaxWidth()
+        .padding(12.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-      Row(
+
+      Column(
         Modifier
           .fillMaxWidth()
-          .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+          .background(
+            brush =
+              Brush.horizontalGradient(
+                colors = listOf(
+                  MaterialTheme.colorScheme.primary,
+                  MaterialTheme.colorScheme.secondary
+                )
+              )
+          )
+          .padding(12.dp)
       ) {
-        IconButton({
-
-        }) {
-          Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.primary)
-        }
         Text(
-          "Novo Hábito",
-          style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
+          "Adicione um novo hábito à sua lista",
+          style = MaterialTheme.typography.labelSmall.copy(fontSize = 16.sp),
+          color = MaterialTheme.colorScheme.background
         )
-        Spacer(Modifier.weight(1f))
-        Image(
-          painter = painterResource(R.drawable.logo),
-          null,
-          modifier = Modifier.size(60.dp),
-          contentScale = ContentScale.Crop
+      }
+      OutlinedTextField(
+        value = nome,
+        onValueChange = {
+          nome = it
+          nomeErr =
+            if (nome.isEmpty()) "Campo obrigatório"
+            else if (nome.length < 3) "Mínimo 3 caracteres"
+            else if (nome.length > 60) "Máximo 60 caracteres"
+            else null
+        },
+        label = { Text("Nome do hábito") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+        trailingIcon = {
+          Icon(Icons.Default.Dashboard, null, tint = MaterialTheme.colorScheme.secondary)
+        }
+      )
+
+
+      Row(Modifier.fillMaxWidth()) {
+
+        nomeErr?.let {
+          Text(
+            nomeErr!!,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontSize = 14.sp,
+              fontWeight = FontWeight.Medium
+            )
+          )
+        }
+      }
+
+      OutlinedTextField(
+        isError = descricaoErr != null,
+        value = descricao,
+        onValueChange = {
+          descricao = it
+          descricaoErr =
+            if (descricao.length > 200) "Máximo 200 caracteres"
+            else null
+        },
+        label = { Text("Descrição") },
+        minLines = 3,
+        singleLine = false,
+        modifier = Modifier.fillMaxWidth(),
+        trailingIcon = {
+          Icon(Icons.Default.Description, null, tint = MaterialTheme.colorScheme.secondary)
+        }
+
+      )
+
+      Row(Modifier.fillMaxWidth()) {
+        if (descricao.length in 1..200) {
+          Text(
+            "Restam ${200 - descricao.length} caracteres",
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontSize = 14.sp,
+              fontWeight = FontWeight.Medium
+            )
+          )
+
+        }
+        descricaoErr?.let {
+          Text(
+            descricaoErr!!,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.labelSmall.copy(
+              fontSize = 14.sp,
+              fontWeight = FontWeight.Medium
+            )
+          )
+        }
+      }
+
+      Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ExposedDropdownMenuBox(
+          expanded = categoriaExpanded,
+          onExpandedChange = {},
+          modifier = Modifier.weight(1f)
+        ) {
+          Column() {
+            OutlinedTextField(
+              isError = categoriaErr != null,
+              value = selectedCategoria,
+              onValueChange = {
+                categoriaErr = if (selectedCategoria.isEmpty()) "Campo obrigatório" else null
+              },
+              modifier = Modifier.fillMaxWidth(),
+              label = { Text("Categoria") },
+              singleLine = true,
+
+              trailingIcon = {
+
+                IconButton(onClick = {
+                  categoriaExpanded = !categoriaExpanded
+                }) {
+                  ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoriaExpanded)
+                }
+              }
+
+            )
+            categoriaErr?.let {
+              Text(
+                categoriaErr!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall.copy(
+                  fontSize = 14.sp,
+                  fontWeight = FontWeight.Medium
+                )
+              )
+            }
+          }
+
+          DropdownMenu(
+            expanded = categoriaExpanded,
+            onDismissRequest = { categoriaExpanded = false },
+            containerColor = MaterialTheme.colorScheme.background
+          ) {
+            CATEGORIAS.values().forEach {
+              DropdownMenuItem(
+                text = { Text(it.name) },
+                onClick = { selectedCategoria = it.name; categoriaExpanded = false }
+              )
+            }
+          }
+        }
+
+
+
+        OutlinedTextField(
+          horario,
+          {},
+          readOnly = true,
+          label = { Text("Horário alvo") },
+          trailingIcon = {
+            IconButton(onClick = {
+              horarioExpanded = !horarioExpanded
+            }) {
+              Icon(Icons.Default.HourglassTop, null, tint = MaterialTheme.colorScheme.secondary)
+            }
+          },
+          modifier = Modifier.weight(1f)
         )
+
+
+
+        if (horarioExpanded) {
+          AlertDialog(
+            onDismissRequest = {
+            },
+            confirmButton = {
+              Button(
+                onClick = {
+
+                  horario =
+                    if (timePickerState.hour < 10) {
+                      "0${timePickerState.hour}"
+                    } else {
+                      timePickerState.hour.toString()
+
+                    } + ":${timePickerState.minute}"
+                  horarioExpanded = false
+                }
+
+              ) { Text("Salvar") }
+            },
+            dismissButton = {
+              TextButton(onClick = {
+
+                horarioExpanded = false
+              }) {
+                Text("Cancelar")
+              }
+            },
+            text = {
+              TimePicker(
+                colors = TimePickerDefaults.colors(
+                  timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.secondary.copy(0.6f),
+
+                  ),
+
+                state = timePickerState
+              )
+            }
+          )
+
+        }
+      }
+
+
+      Spacer(Modifier.height(8.dp))
+      Column(Modifier.fillMaxWidth()) {
+
+
+        Text(
+          "Frequência",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Normal
+          )
+        )
+
+        LazyRow(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+          items(
+            frequenciaList
+          ) {
+
+            FilterChip(
+              selected = selectedFrequencia == it,
+              colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(0.2f),
+              ),
+              onClick = {
+                selectedFrequencia = it
+              },
+              label = { Text(it) }
+            )
+          }
+        }
+
+
+        if (selectedFrequencia == "Personalizado") {
+          LazyRow(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+          ) {
+            items(diasSemana) { dia ->
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+              ) {
+
+                Checkbox(
+                  checked = selectedDiasSemana.contains(dia),
+                  onCheckedChange = {
+                    if (selectedDiasSemana.contains(dia)) selectedDiasSemana.remove(dia)
+                    else selectedDiasSemana.add(dia)
+                  }
+                )
+                Text(dia)
+              }
+            }
+          }
+        }
 
 
       }
 
 
-      Column(
-        Modifier
-          .fillMaxWidth()
-          .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-
-        Column(Modifier.fillMaxWidth().background(brush =
-          Brush.horizontalGradient(
-            colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
-          )).padding(12.dp)) {
-          Text(
-            "Adicione um novo hábito à sua lista",
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 16.sp),
-            color = MaterialTheme.colorScheme.background
+      Column(Modifier.fillMaxWidth()) {
+        var isLembreteActive by remember { mutableStateOf(false) }
+        var selectedLembrete by remember { mutableStateOf("") }
+        var lembreteList = listOf<String>(
+          "5 min", "15 min", "30 min", "1h"
+        )
+        var expandedLembrete by remember { mutableStateOf(false) }
+        Text(
+          "Lembrete",
+          style = MaterialTheme.typography.labelSmall.copy(
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Normal
           )
-        }
-        OutlinedTextField(
-          value = nome,
-          onValueChange = {
-            nome = it
-            nomeErr =
-              if (nome.isEmpty()) "Campo obrigatório"
-              else if (nome.length < 3) "Mínimo 3 caracteres"
-              else if (nome.length > 60) "Máximo 60 caracteres"
-              else null
-          },
-          label = { Text("Nome do hábito") },
-          singleLine = true,
-          modifier = Modifier.fillMaxWidth(),
-          trailingIcon ={
-            Icon(Icons.Default.Dashboard, null, tint = MaterialTheme.colorScheme.secondary)
-          }
+        )
+        Switch(
+          checked = isLembreteActive,
+          onCheckedChange = { isLembreteActive = !isLembreteActive }
         )
 
-
-        Row(Modifier.fillMaxWidth()) {
-
-          nomeErr?.let {
-            Text(
-              nomeErr!!,
-              color = MaterialTheme.colorScheme.error,
-              style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-              )
-            )
-          }
-        }
-
-        OutlinedTextField(
-          isError = descricaoErr != null,
-          value = descricao,
-          onValueChange = {
-            descricao = it
-            descricaoErr =
-              if (descricao.length > 200) "Máximo 200 caracteres"
-              else null
-          },
-          label = { Text("Descrição") },
-          minLines = 3,
-          singleLine = false,
-          modifier = Modifier.fillMaxWidth(),
-          trailingIcon = {
-            Icon(Icons.Default.Description, null, tint = MaterialTheme.colorScheme.secondary)
-          }
-
-          )
-
-        Row(Modifier.fillMaxWidth()) {
-          if (descricao.length in 1..200) {
-            Text(
-              "Restam ${200 - descricao.length} caracteres",
-              style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-              )
-            )
-
-          }
-          descricaoErr?.let {
-            Text(
-              descricaoErr!!,
-              color = MaterialTheme.colorScheme.error,
-              style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-              )
-            )
-          }
-        }
-
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (isLembreteActive)
           ExposedDropdownMenuBox(
-            expanded = categoriaExpanded,
-            onExpandedChange = {},
-            modifier = Modifier.weight(1f)
+            expanded = expandedLembrete,
+            onExpandedChange = { },
+            modifier = Modifier.fillMaxWidth()
           ) {
-            Column() {
-              OutlinedTextField(
-                isError = categoriaErr != null,
-                value = selectedCategoria,
-                onValueChange = {
-                  categoriaErr = if (selectedCategoria.isEmpty()) "Campo obrigatório" else null
-                },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Categoria") },
-                singleLine = true,
-
-                trailingIcon = {
-
-                  IconButton(onClick = {
-                    categoriaExpanded = !categoriaExpanded
-                  }) {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoriaExpanded)
-                  }
+            OutlinedTextField(
+              value = selectedLembrete,
+              onValueChange = {},
+              readOnly = true,
+              label = {
+                Text("Antecedência do lembrete")
+              },
+              modifier = Modifier.fillMaxWidth(),
+              trailingIcon = {
+                IconButton(onClick = {
+                  expandedLembrete = !expandedLembrete
+                }) {
+                  ExposedDropdownMenuDefaults.TrailingIcon(expandedLembrete)
                 }
-
-              )
-              categoriaErr?.let {
-                Text(
-                  categoriaErr!!,
-                  color = MaterialTheme.colorScheme.error,
-                  style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                  )
-                )
               }
-            }
+            )
 
             DropdownMenu(
-              expanded = categoriaExpanded,
-              onDismissRequest = { categoriaExpanded = false },
+              expanded = expandedLembrete,
+              onDismissRequest = { expandedLembrete = false },
+
               containerColor = MaterialTheme.colorScheme.background
             ) {
-              CATEGORIAS.values().forEach {
+              lembreteList.forEach {
                 DropdownMenuItem(
-                  text = { Text(it.name) },
-                  onClick = { selectedCategoria = it.name; categoriaExpanded = false }
+                  text = { Text(it) },
+                  onClick = { selectedLembrete = it; expandedLembrete = false }
                 )
               }
             }
-          }
-
-
-
-          OutlinedTextField(
-            horario,
-            {},
-            readOnly = true,
-            label = { Text("Horário alvo") },
-            trailingIcon = {
-              IconButton(onClick = {
-                horarioExpanded = !horarioExpanded
-              }) {
-                Icon(Icons.Default.HourglassTop, null, tint = MaterialTheme.colorScheme.secondary)
-              }
-            },
-            modifier = Modifier.weight(1f)
-          )
-
-
-
-          if (horarioExpanded) {
-            AlertDialog(
-              onDismissRequest = {
-              },
-              confirmButton = {
-                Button(
-                  onClick = {
-
-                    horario =
-                      if (timePickerState.hour < 10) {
-                        "0${timePickerState.hour}"
-                      } else {
-                        timePickerState.hour.toString()
-
-                      } + ":${timePickerState.minute}"
-                    horarioExpanded = false
-                  }
-
-                ) { Text("Salvar") }
-              },
-              dismissButton = {
-                TextButton(onClick = {
-
-                  horarioExpanded = false
-                }) {
-                  Text("Cancelar")
-                }
-              },
-              text = {
-                TimePicker(
-                  colors = TimePickerDefaults.colors(
-                    timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.secondary.copy(0.6f  ),
-
-                  ),
-
-                  state = timePickerState
-                )
-              }
-            )
 
           }
+      }
+
+
+      var metaDiaria by remember { mutableStateOf("") }
+      OutlinedTextField(
+        value = metaDiaria,
+
+        onValueChange = {
+          it.toIntOrNull()?.let { a ->
+            if (a > 0) metaDiaria = it
+          } ?: ""
+        },
+        label = { Text("Meta diária") },
+        modifier = Modifier.fillMaxWidth(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        trailingIcon = {
+          Icon(Icons.Default.Today, null, tint = MaterialTheme.colorScheme.secondary)
         }
+      )
 
 
-        Spacer(Modifier.height(8.dp))
-        Column(Modifier.fillMaxWidth()) {
-
-
-          Text(
-            "Frequência",
-            style = MaterialTheme.typography.labelSmall.copy(
-              fontSize = 14.sp,
-              fontWeight = FontWeight.Normal
-            )
-          )
-
-          LazyRow(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-          ) {
-            items(
-              frequenciaList
-            ) {
-
-              FilterChip(
-                selected = selectedFrequencia == it,
-                colors = FilterChipDefaults.filterChipColors(
-                  selectedContainerColor = MaterialTheme.colorScheme.primary.copy(0.2f),
-                ),
-                onClick = {
-                  selectedFrequencia = it
-                },
-                label = { Text(it) }
-              )
-            }
-          }
-
-
-          if (selectedFrequencia == "Personalizado") {
-            LazyRow(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-              items(diasSemana) { dia ->
-                Row(
-                  verticalAlignment = Alignment.CenterVertically,
-                ) {
-
-                  Checkbox(
-                    checked = selectedDiasSemana.contains(dia),
-                    onCheckedChange = {
-                      if (selectedDiasSemana.contains(dia)) selectedDiasSemana.remove(dia)
-                      else selectedDiasSemana.add(dia)
-                    }
-                  )
-                  Text(dia)
-                }
-              }
-            }
-          }
-
-
-        }
-
-
-        Column(Modifier.fillMaxWidth()) {
-          var isLembreteActive by remember { mutableStateOf(false) }
-          var selectedLembrete by remember { mutableStateOf("") }
-          var lembreteList = listOf<String>(
-            "5 min", "15 min", "30 min", "1h"
-          )
-          var expandedLembrete by remember { mutableStateOf(false) }
-          Text(
-            "Lembrete",
-            style = MaterialTheme.typography.labelSmall.copy(
-              fontSize = 14.sp,
-              fontWeight = FontWeight.Normal
-            )
-          )
-          Switch(
-            checked = isLembreteActive,
-            onCheckedChange = { isLembreteActive = !isLembreteActive }
-          )
-
-          if (isLembreteActive)
-            ExposedDropdownMenuBox(
-              expanded = expandedLembrete,
-              onExpandedChange = { },
-              modifier = Modifier.fillMaxWidth()
-            ) {
-              OutlinedTextField(
-                value = selectedLembrete,
-                onValueChange = {},
-                readOnly = true,
-                label = {
-                  Text("Antecedência do lembrete")
-                },
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                  IconButton(onClick = {
-                    expandedLembrete = !expandedLembrete
-                  }) {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expandedLembrete)
-                  }
-                }
-              )
-
-              DropdownMenu(
-                expanded = expandedLembrete,
-                onDismissRequest = { expandedLembrete = false },
-
-                containerColor = MaterialTheme.colorScheme.background
-              ) {
-                lembreteList.forEach {
-                  DropdownMenuItem(
-                    text = { Text(it) },
-                    onClick = { selectedLembrete = it; expandedLembrete = false }
-                  )
-                }
-              }
-
-            }
-        }
-
-
-        var metaDiaria by remember { mutableStateOf("") }
+      Column(Modifier.fillMaxWidth()) {
         OutlinedTextField(
-          value = metaDiaria,
-
-          onValueChange = {
-            it.toIntOrNull()?.let { a ->
-              if (a > 0) metaDiaria = it
-            } ?: ""
-          },
-          label = { Text("Meta diária") },
+          value = tagInput,
+          onValueChange = { tagInput = it },
+          label = { Text("Adicionar tag") },
           modifier = Modifier.fillMaxWidth(),
-          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+          keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Next
+          ),
+          singleLine = true,
           trailingIcon = {
-            Icon(Icons.Default.Today, null, tint = MaterialTheme.colorScheme.secondary)
-          }
+            IconButton(onClick = {
+              if (tagInput.isNotEmpty() && !(tagList.contains(tagInput))) tagList.add(tagInput)
+            }) {
+              Icon(Icons.Default.Add, null)
+            }
+          },
+          keyboardActions = KeyboardActions(
+            onNext = {
+
+              if (tagInput.isNotEmpty() && !(tagList.contains(tagInput))) tagList.add(tagInput)
+            }
+          )
         )
 
-
-        Column(Modifier.fillMaxWidth()) {
-          OutlinedTextField(
-            value = tagInput,
-            onValueChange = { tagInput = it },
-            label = { Text("Adicionar tag") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-              imeAction = ImeAction.Next
-            ),
-            singleLine = true,
-            trailingIcon = {
-              IconButton(onClick = {
-                if (tagInput.isNotEmpty() && !(tagList.contains(tagInput))) tagList.add(tagInput)
-              }) {
-                Icon(Icons.Default.Add, null)
-              }
-            },
-            keyboardActions = KeyboardActions(
-              onNext = {
-
-                if (tagInput.isNotEmpty() && !(tagList.contains(tagInput))) tagList.add(tagInput)
-              }
+        LazyRow(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+          items(tagList) { item ->
+            InputChip(
+              colors = InputChipDefaults.inputChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(0.2f)
+              ),
+              selected = true,
+              onClick = {},
+              trailingIcon = {
+                IconButton(onClick = {
+                  tagList.remove(item)
+                }) { Icon(Icons.Default.Close, null) }
+              },
+              label = { Text(item) }
             )
-          )
-
-          LazyRow(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-          ) {
-            items(tagList) { item ->
-              InputChip(
-                colors = InputChipDefaults.inputChipColors(
-                  selectedContainerColor = MaterialTheme.colorScheme.primary.copy(0.2f)
-                ),
-                selected = true,
-                onClick = {},
-                trailingIcon = {
-                  IconButton(onClick = {
-                    tagList.remove(item)
-                  }) { Icon(Icons.Default.Close, null)}
-                },
-                label = { Text(item) }
-              )
-            }
           }
+        }
 
-          Spacer(Modifier.height(12.dp))
+        var showCancelDialog by remember { mutableStateOf(false) }
+        if (showCancelDialog)
+          AlertDialog(
+            title = {
+              Text("Confirmar cancelamento")
+            },
+            text = { Text("Deseja descartar as alterações?") },
+            onDismissRequest = {},
+            dismissButton = {
+              Button(
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                onClick = {
+              showCancelDialog = false
+                }) { Text("Continuar editando") }
+            },
+            confirmButton = {
+              TextButton(onClick = {
+
+                }) { Text("Descartar", color = MaterialTheme.colorScheme.error) }
+            }
+
+          )
+        Spacer(Modifier.height(12.dp))
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
           Button(
-            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+              MaterialTheme.colorScheme.error
+            ),
+            onClick = {
+              showCancelDialog = true
+            }
+          ) {
+            Text("Cancelar" )
+            Icon(Icons.Default.Close, null)
+
+          }
+          Button(
+            modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(12.dp),
             onClick = {
               scope.launch {
@@ -599,4 +648,4 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
       }
     }
   }
-
+}
