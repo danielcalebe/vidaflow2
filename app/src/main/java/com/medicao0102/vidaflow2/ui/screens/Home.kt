@@ -90,7 +90,9 @@ import com.medicao0102.vidaflow2.ui.screens.PERIODOS.TARDE
 import io.ktor.http.hostIsIp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
 import java.time.LocalTime
 import kotlin.math.roundToInt
 
@@ -129,9 +131,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
   }
 
 
-  var showBottomSheet by remember { mutableStateOf(false) }
-  var bottomSheetData by remember { mutableStateOf<HabitResponse?>(null) }
-  var sheetState = rememberModalBottomSheetState()
+
   Column(
     Modifier
       .fillMaxSize()
@@ -139,47 +139,7 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
       .background(MaterialTheme.colorScheme.background)
   ) {
 
-    if (showBottomSheet) {
-      ModalBottomSheet(sheetState = sheetState, onDismissRequest = {
-        showBottomSheet = false
-      }) {
-        Row(
-          Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center
-        ) {
-          Row(
-            Modifier
-              .fillMaxWidth()
-              .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-          ) {
-            TextButton(onClick = {
 
-            }) {
-              Text("Editar")
-            }
-            VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
-            TextButton(onClick = {
-
-            }) {
-              Text("Duplicar", color = MaterialTheme.colorScheme.surfaceDim)
-            }
-            VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
-            TextButton(onClick = {
-
-            }) {
-              Text("Excluir", color = MaterialTheme.colorScheme.error)
-            }
-            VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
-            TextButton(onClick = {
-
-            }) {
-              Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
-            }
-          }
-        }
-      }
-    }
 //        Button(onClick ={
 //
 //
@@ -401,6 +361,51 @@ fun Home(apiService: ApiService, navController: NavHostController, ctx: Context)
 
                 items(it.result) { item ->
 
+
+                  var showBottomSheet by remember { mutableStateOf(false) }
+                  var bottomSheetData by remember { mutableStateOf<HabitResponse?>(null) }
+                  var sheetState = rememberModalBottomSheetState()
+                  if (showBottomSheet) {
+                    ModalBottomSheet(sheetState = sheetState, onDismissRequest = {
+                      showBottomSheet = false
+                    }) {
+                      Row(
+                        Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center
+                      ) {
+                        Row(
+                          Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                          verticalAlignment = Alignment.CenterVertically,
+                          horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                          TextButton(onClick = {
+                              navController.navigate("criar_editar_habito/${Json.encodeToString(item)}")
+                          }) {
+                            Text("Editar")
+                          }
+                          VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
+                          TextButton(onClick = {
+
+                          }) {
+                            Text("Duplicar", color = MaterialTheme.colorScheme.surfaceDim)
+                          }
+                          VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
+                          TextButton(onClick = {
+
+                          }) {
+                            Text("Excluir", color = MaterialTheme.colorScheme.error)
+                          }
+                          VerticalDivider(Modifier.height(12.dp), color = MaterialTheme.colorScheme.secondary)
+                          TextButton(onClick = {
+
+                          }) {
+                            Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
+                          }
+                        }
+                      }
+                    }
+                  }
                   var offsetX by remember { mutableFloatStateOf(0f) }
                   Card(
                     shape = RoundedCornerShape(12.dp),

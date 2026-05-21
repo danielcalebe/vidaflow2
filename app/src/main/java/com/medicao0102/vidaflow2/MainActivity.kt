@@ -27,20 +27,20 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.medicao0102.vidaflow2.data.ApiService
-import com.medicao0102.vidaflow2.data.NewHabit
 import com.medicao0102.vidaflow2.ui.screens.Cadastro
-import com.medicao0102.vidaflow2.ui.screens.CriarHabito
+import com.medicao0102.vidaflow2.ui.screens.CriarEditarHabito
 import com.medicao0102.vidaflow2.ui.screens.Home
 import com.medicao0102.vidaflow2.ui.screens.Login
 import com.medicao0102.vidaflow2.ui.screens.Splash
@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
             if (currentRoute == "home")
               FloatingActionButton(
                 containerColor = MaterialTheme.colorScheme.secondary,
-                onClick = { navController.navigate("criar_habito") }
+                onClick = { navController.navigate("criar_editar_habito/${null}") }
               ) {
                 Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.primary)
               }
@@ -186,8 +186,19 @@ class MainActivity : ComponentActivity() {
               composable("home") {
                 Home(apiService, navController, context)
               }
-              composable("criar_habito") {
-                CriarHabito(apiService, navController, sh)
+              composable(
+                "criar_editar_habito/{old_habit}",
+                arguments = listOf(
+                  navArgument("old_habit") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                  }
+                )
+              ) { backStack ->
+                val oldHabit = backStack.arguments?.getString("old_habit")
+                Log.d("oldhabit", oldHabit.toString())
+                CriarEditarHabito(apiService, navController, sh, oldHabit)
               }
             }
           }

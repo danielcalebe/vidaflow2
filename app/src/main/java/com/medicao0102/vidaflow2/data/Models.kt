@@ -89,7 +89,7 @@ data class NewHabit(
 
 @Serializable
 data class NewHabitResponse(
-    val id: String,
+    val id: Int,
     val message: String,
     val status: String
 )

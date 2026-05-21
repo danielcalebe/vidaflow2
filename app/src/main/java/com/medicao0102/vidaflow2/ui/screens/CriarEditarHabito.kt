@@ -4,13 +4,10 @@ import android.icu.util.Calendar
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -56,6 +53,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -64,28 +62,40 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.medicao0102.vidaflow2.R
 import com.medicao0102.vidaflow2.data.ApiService
+import com.medicao0102.vidaflow2.data.HabitResponse
 import com.medicao0102.vidaflow2.data.NewHabit
 import com.medicao0102.vidaflow2.data.NewHabitResponse
 import com.medicao0102.vidaflow2.data.UiState
 import kotlinx.coroutines.launch
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: SnackbarHostState) {
+fun CriarEditarHabito(
+  apiService: ApiService,
+  navController: NavHostController,
+  sh: SnackbarHostState,
+  oldHabit: String?
+) {
+
+
+  var isCreateMode by remember { mutableStateOf(true) }
+  var oldHabitObj by remember { mutableStateOf<HabitResponse?>(null) }
+
+  isCreateMode = oldHabit == null
+  if (!isCreateMode) oldHabitObj = Json.decodeFromString<HabitResponse>(oldHabit!!)
 
   var apiResult by remember { mutableStateOf<UiState<NewHabitResponse>?>(null) }
   var isLembreteActive by remember { mutableStateOf(false) }
@@ -99,12 +109,33 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
   var categoriaErr by remember { mutableStateOf<String?>(null) }
   var scope = rememberCoroutineScope()
 
-  var nome by remember { mutableStateOf("") }
-  var descricao by remember { mutableStateOf("") }
+  var nome by remember {
+    mutableStateOf(
+      oldHabitObj?.nome ?: ""
+    )
+  }
+  var descricao by remember {
+    mutableStateOf(
+      ""
+    )
+  }
   var tagInput by remember { mutableStateOf("") }
-  val tagList = remember { mutableStateListOf<String>() }
 
-  var horario by remember { mutableStateOf("") }
+  val tagList = remember {
+    mutableStateListOf<String>()
+  }
+
+  oldHabitObj?.let {
+    tagList.addAll(it.tags)
+  }
+
+
+  var horario by remember {
+    mutableStateOf(
+      oldHabitObj?.horario_alvo ?: ""
+    )
+  }
+
   var horarioExpanded by remember { mutableStateOf(false) }
   var currentTime = Calendar.getInstance()
   var timePickerState = rememberTimePickerState(
@@ -113,7 +144,11 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
     is24Hour = true
   )
   var categoriaExpanded by remember { mutableStateOf(false) }
-  var selectedCategoria by remember { mutableStateOf("") }
+  var selectedCategoria by remember {
+    mutableStateOf(
+      oldHabitObj?.categoria ?: ""
+    )
+  }
   val diasSemana = listOf<String>(
     "Seg",
     "Ter",
@@ -132,7 +167,11 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
     "Fins de semana",
     "Personalizado"
   )
-  var selectedFrequencia by remember { mutableStateOf("") }
+  var selectedFrequencia by remember {
+    mutableStateOf(
+      oldHabitObj?.frequencia ?: ""
+    )
+  }
 
 
 
@@ -154,7 +193,7 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
         Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.primary)
       }
       Text(
-        "Novo Hábito",
+        if (isCreateMode) "Novo Hábito" else "Editar Hábito",
         style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
       )
       Spacer(Modifier.weight(1f))
@@ -192,7 +231,7 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
           .padding(12.dp)
       ) {
         Text(
-          "Adicione um novo hábito à sua lista",
+          if (isCreateMode) "Adicione um novo hábito à sua lista" else "Edite seu hábito é torne-o mais sua cara",
           style = MaterialTheme.typography.labelSmall.copy(fontSize = 16.sp),
           color = MaterialTheme.colorScheme.background
         )
@@ -541,12 +580,12 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
           },
           keyboardActions = KeyboardActions(
             onNext = {
-
               if (tagInput.isNotEmpty() && !(tagList.contains(tagInput))) tagList.add(tagInput)
             }
           )
         )
 
+        Spacer(Modifier.height(8.dp))
         LazyRow(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -558,12 +597,17 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
               ),
               selected = true,
               onClick = {},
-              trailingIcon = {
-                IconButton(onClick = {
-                  tagList.remove(item)
-                }) { Icon(Icons.Default.Close, null) }
-              },
-              label = { Text(item) }
+              label = {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.Center
+                ) {
+                  Text(item)
+                  IconButton(onClick = {
+                    tagList.remove(item)
+                  }) { Icon(Icons.Default.Close, null) }
+                }
+              }
             )
           }
         }
@@ -647,27 +691,54 @@ fun CriarHabito(apiService: ApiService, navController: NavHostController, sh: Sn
                   withDismissAction = true
                 )
                 else {
-                  scope.launch {
-                    apiResult =  apiService.newHabit(
-                      NewHabit(
-                        antecedencia_lembrete = selectedLembrete,
-                        categoria = selectedCategoria,
-                        frequencia = selectedFrequencia,
-                        horario_alvo = horario,
-                        lembrete = isLembreteActive,
-                        meta_diaria = metaDiaria.toInt(),
-                        nome = nome,
-                        tags = tagList,
-                        user_id = apiService.getLoginResponse()?.userId.toString()?: "0"
+                  if (isCreateMode) {
+                    scope.launch {
+                      apiResult = apiService.newHabit(
+                        NewHabit(
+                          antecedencia_lembrete = selectedLembrete,
+                          categoria = selectedCategoria,
+                          frequencia = selectedFrequencia,
+                          horario_alvo = horario,
+                          lembrete = isLembreteActive,
+                          meta_diaria = metaDiaria.toInt(),
+                          nome = nome,
+                          tags = tagList,
+                          user_id = apiService.getLoginResponse()?.userId.toString() ?: "0"
+                        )
                       )
-                    )
 
-                    Log.d("apiREsult", apiResult.toString())
-                    if (apiResult is UiState.Success) {
-                      sh.showSnackbar("Sucesso")
-                      navController.navigate("home")}
-                    else if(apiResult is UiState.Error){
-                        sh.showSnackbar("Erro")
+                      Log.d("apiREsult", apiResult.toString())
+                      if (apiResult is UiState.Success) {
+                        sh.showSnackbar((apiResult as UiState.Success<NewHabitResponse>).result.message + " - Redirecionando para a tela de hábitos...")
+                        navController.navigate("home")
+                      } else if (apiResult is UiState.Error) {
+                        sh.showSnackbar((apiResult as UiState.Error).errorResponse.message)
+                      }
+                    }
+                  } else {
+                    scope.launch {
+                      apiResult = apiService.editHabit(
+                        NewHabit(
+                          antecedencia_lembrete = selectedLembrete,
+                          categoria = selectedCategoria,
+                          frequencia = selectedFrequencia,
+                          horario_alvo = horario,
+                          lembrete = isLembreteActive,
+                          meta_diaria = metaDiaria.toInt(),
+                          nome = nome,
+                          tags = tagList,
+                          user_id = apiService.getLoginResponse()?.userId.toString() ?: "0"
+                        ),
+                        id = oldHabitObj?.id ?: -1
+                      )
+
+                      Log.d("apiREsult", apiResult.toString())
+                      if (apiResult is UiState.Success) {
+                        sh.showSnackbar((apiResult as UiState.Success<NewHabitResponse>).result.message + " - Redirecionando para a tela de hábitos...")
+                        navController.navigate("home")
+                      } else if (apiResult is UiState.Error) {
+                        sh.showSnackbar((apiResult as UiState.Error).errorResponse.message)
+                      }
                     }
                   }
                 }

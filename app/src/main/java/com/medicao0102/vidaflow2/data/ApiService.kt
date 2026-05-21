@@ -23,6 +23,7 @@ import kotlinx.serialization.json.Json
 import androidx.core.content.edit
 import io.ktor.client.plugins.auth.authProviders
 import io.ktor.client.plugins.auth.clearAuthTokens
+import io.ktor.client.request.put
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
@@ -287,4 +288,37 @@ class ApiService(
       return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
     }
   }
+
+
+
+
+  suspend fun editHabit(newHabit: NewHabit, id: Int): UiState<NewHabitResponse> {
+    try {
+      val response = client.put("$BASE_URL/habits/$id") {
+        contentType(ContentType.Application.Json)
+        setBody(newHabit)
+      }
+      when (response.status.value) {
+        201 -> {
+          return UiState.Success(response.body<NewHabitResponse>())
+        }
+        else -> {
+          try {
+            return UiState.Error(
+              Exception("Desconhecido"), response.body<ErrorResponse>()
+            )
+          } catch (e1: Exception) {
+            return UiState.Error(
+              e1, ErrorResponse("Requisição retornoou um erro deconhecido!", "unknow")
+            )
+          }
+        }
+      }
+    } catch (e: Exception) {
+      e.printStackTrace()
+      return UiState.Error(e, ErrorResponse("Erro desconhecido", "unknow"))
+    }
+  }
+
+
 }
